@@ -1,56 +1,79 @@
-import redis from 'redis';
-import { promisify } from 'util';
+import { MongoClient } from 'mongodb';
 
-class RedisClient {
+/**
+ * Database Client Utility Class
+ */
+class DBClient {
+  /**
+   * Create a new MongoDB client
+   */
   constructor() {
-    this.client = redis.createClient();
+    // Get configuration from environment variables or use defaults
+    const host = process.env.DB_HOST || 'localhost';
+    const port = process.env.DB_PORT || '27017';
+    const database = process.env.DB_DATABASE || 'files_manager';
 
-    // Handle connection errors
-    this.client.on('error', (error) => {
-      console.error('Redis Client Error:', error);
-    });
+    // Construct MongoDB connection URL
+    const url = `mongodb://${host}:${port}`;
+    
+    // Create MongoDB client
+    this.client = new MongoClient(url, { useUnifiedTopology: true });
+    this.dbName = database;
+    this.connection = null;
+
+    // Establish connection
+    this.connect();
   }
 
   /**
-   * Check if the Redis connection is alive
+   * Establish connection to MongoDB
+   */
+  async connect() {
+    try {
+      this.connection = await this.client.connect();
+    } catch (error) {
+      console.error('MongoDB Connection Error:', error);
+    }
+  }
+
+  /**
+   * Check if MongoDB connection is alive
    * @returns {boolean} Connection status
    */
   isAlive() {
-    return this.client.connected;
+    return this.connection !== null;
   }
 
   /**
-   * Get a value from Redis by key
-   * @param {string} key - The key to retrieve
-   * @returns {Promise<string|null>} The value associated with the key
+   * Get the MongoDB database instance
+   * @returns {object|null} MongoDB database or null
    */
-  async get(key) {
-    const getAsync = promisify(this.client.get).bind(this.client);
-    return getAsync(key);
+  getDb() {
+    if (!this.connection) return null;
+    return this.connection.db(this.dbName);
   }
 
   /**
-   * Set a key-value pair in Redis with an expiration
-   * @param {string} key - The key to set
-   * @param {*} value - The value to store
-   * @param {number} duration - Expiration time in seconds
-   * @returns {Promise<void>}
+   * Count number of users in the database
+   * @returns {Promise<number>} Number of users
    */
-  async set(key, value, duration) {
-    const setAsync = promisify(this.client.setex).bind(this.client);
-    return setAsync(key, duration, value);
+  async nbUsers() {
+    const db = this.getDb();
+    if (!db) return 0;
+    return db.collection('users').countDocuments();
   }
 
   /**
-   * Delete a key from Redis
-   * @param {string} key - The key to delete
-   * @returns {Promise<void>}
+   * Count number of files in the database
+   * @returns {Promise<number>} Number of files
    */
-  async del(key) {
-    const delAsync = promisify(this.client.del).bind(this.client);
-    return delAsync(key);
+  async nbFiles() {
+    const db = this.getDb();
+    if (!db) return 0;
+    return db.collection('files').countDocuments();
   }
 }
 
-const redisClient = new RedisClient();
-export default redisClient;
+// Create and export a single instance of DBClient
+const dbClient = new DBClient();
+export default dbClient;
