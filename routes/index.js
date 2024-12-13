@@ -1,12 +1,13 @@
-import express from 'express';
-import AppController from '../controllers/AppController.js';
-
+const express = require('express');
 const router = express.Router();
+const FilesController = require('../controllers/FilesController');
+const UsersController = require('../controllers/UsersController');
 
-// Status endpoint
-router.get('/status', AppController.getStatus);
+// File routes
+router.get('/files/:id/data', FilesController.getFile);
+router.post('/files', FilesController.addToThumbnailQueue);
 
-// Stats endpoint
-router.get('/stats', AppController.getStats);
+// User routes
+router.post('/users', UsersController.createUser);
 
-export default router;
+module.exports = router;
