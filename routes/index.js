@@ -1,13 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const FilesController = require('../controllers/FilesController');
-const UsersController = require('../controllers/UsersController');
+import { Router } from 'express';
+import AppController from '../controllers/AppController';
 
-// File routes
-router.get('/files/:id/data', FilesController.getFile);
-router.post('/files', FilesController.addToThumbnailQueue);
+const router = Router();
 
-// User routes
-router.post('/users', UsersController.createUser);
-
-module.exports = router;
+router.get('/status', AppController.getStatus);
+router.get('/stats', AppController.getStats);
