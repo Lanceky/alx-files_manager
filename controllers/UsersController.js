@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid'; // Removed if not used, based on ESLint error
 import sha1 from 'sha1';
 import dbClient from '../utils/db';
 
@@ -22,7 +21,7 @@ class UsersController {
       // Check if email already exists
       const userExists = await userCollection.findOne({ email });
       if (userExists) {
-        return res.status(400).json({ error: 'Already exist' });
+        return res.status(400).json({ error: 'Already exists' });
       }
 
       // Hash the password with SHA1
