@@ -1,24 +1,15 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import routes from './routes';
-import { dbClient } from './utils/db';  // Assuming DBClient export in utils/db.js
+import { Router } from 'express';
+import AppController from '../controllers/AppController';
+import UsersController from '../controllers/UsersController';
+import AuthController from '../controllers/AuthController';
 
-const app = express();
+const router = Router();
 
-// Middlewares
-app.use(bodyParser.json());
+router.get('/status', AppController.getStatus);
+router.get('/stats', AppController.getStats);
+router.post('/users', UsersController.postNew);
+router.get('/connect', AuthController.getConnect);
+router.get('/disconnect', AuthController.getDisconnect);
+router.get('/users/me', UsersController.getMe);
 
-// Load routes
-app.use(routes);
-
-// Starting the server
-const port = process.env.PORT || 5000;
-app.listen(port, async () => {
-    // Check if DB is alive when the server starts
-    if (await dbClient.isAlive()) {
-        console.log(`Server running on port ${port}`);
-    } else {
-        console.log('Database connection failed');
-        process.exit(1);
-    }
-});
+export default router;
