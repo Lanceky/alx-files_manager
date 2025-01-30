@@ -1,79 +1,69 @@
-import { MongoClient } from 'mongodb';
+import { createClient } from 'redis';
 
-/**
- * Database Client Utility Class
- */
-class DBClient {
-  /**
-   * Create a new MongoDB client
-   */
-  constructor() {
-    // Get configuration from environment variables or use defaults
-    const host = process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || '27017';
-    const database = process.env.DB_DATABASE || 'files_manager';
+class RedisClient {
+    constructor() {
+        // Create a Redis client instance
+        this.client = createClient();
 
-    // Construct MongoDB connection URL
-    const url = `mongodb://${host}:${port}`;
-    
-    // Create MongoDB client
-    this.client = new MongoClient(url, { useUnifiedTopology: true });
-    this.dbName = database;
-    this.connection = null;
-
-    // Establish connection
-    this.connect();
-  }
-
-  /**
-   * Establish connection to MongoDB
-   */
-  async connect() {
-    try {
-      this.connection = await this.client.connect();
-    } catch (error) {
-      console.error('MongoDB Connection Error:', error);
+        // Handle Redis client errors
+        this.client.on('error', (err) => {
+            console.error('Redis client error:', err);
+        });
     }
-  }
 
-  /**
-   * Check if MongoDB connection is alive
-   * @returns {boolean} Connection status
-   */
-  isAlive() {
-    return this.connection !== null;
-  }
+    /**
+     * Check if the Redis client is connected
+     * @returns {boolean} True if connected, false otherwise
+     */
+    isAlive() {
+        return this.client.connected;
+    }
 
-  /**
-   * Get the MongoDB database instance
-   * @returns {object|null} MongoDB database or null
-   */
-  getDb() {
-    if (!this.connection) return null;
-    return this.connection.db(this.dbName);
-  }
+    /**
+     * Get the value associated with a given key
+     * @param {string} key - The key to retrieve
+     * @returns {Promise<string | null>} The value stored in Redis, or null if not found
+     */
+    async get(key) {
+        return new Promise((resolve, reject) => {
+            this.client.get(key, (err, value) => {
+                if (err) reject(err);
+                else resolve(value);
+            });
+        });
+    }
 
-  /**
-   * Count number of users in the database
-   * @returns {Promise<number>} Number of users
-   */
-  async nbUsers() {
-    const db = this.getDb();
-    if (!db) return 0;
-    return db.collection('users').countDocuments();
-  }
+    /**
+     * Set a key-value pair in Redis with an expiration
+     * @param {string} key - The key to set
+     * @param {string | number} value - The value to store
+     * @param {number} duration - Expiration time in seconds
+     * @returns {Promise<boolean>} True if successful
+     */
+    async set(key, value, duration) {
+        return new Promise((resolve, reject) => {
+            this.client.set(key, value, 'EX', duration, (err) => {
+                if (err) reject(err);
+                else resolve(true);
+            });
+        });
+    }
 
-  /**
-   * Count number of files in the database
-   * @returns {Promise<number>} Number of files
-   */
-  async nbFiles() {
-    const db = this.getDb();
-    if (!db) return 0;
-    return db.collection('files').countDocuments();
-  }
+    /**
+     * Delete a key-value pair from Redis
+     * @param {string} key - The key to delete
+     * @returns {Promise<boolean>} True if successful
+     */
+    async del(key) {
+        return new Promise((resolve, reject) => {
+            this.client.del(key, (err) => {
+                if (err) reject(err);
+                else resolve(true);
+            });
+        });
+    }
 }
 
-// Create and export a single instance of DBClient
-const dbClient = new DBClient();
-export default dbClient;
+// Create and export a RedisClient instance
+const redisClient = new RedisClient();
+export default redisClient;
