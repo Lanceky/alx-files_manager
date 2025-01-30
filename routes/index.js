@@ -4,11 +4,11 @@ import UsersController from '../controllers/UsersController';
 
 const router = express.Router();
 
-// Existing routes
+// App routes
 router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
 
-// New route for creating users
+// User routes
 router.post('/users', UsersController.postNew);
 
 export default router;
