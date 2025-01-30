@@ -1,16 +1,17 @@
 import sha1 from 'sha1';
-import dbClient from '../utils/db';
+import { v4 as uuidv4 } from 'uuid';
+import dbClient from '../utils/db'; // MongoDB client
 
 class UsersController {
+  // POST /users (Create new user)
   static async postNew(req, res) {
     const { email, password } = req.body;
 
-    // Check for missing email
+    // Validate email and password
     if (!email) {
       return res.status(400).json({ error: 'Missing email' });
     }
 
-    // Check for missing password
     if (!password) {
       return res.status(400).json({ error: 'Missing password' });
     }
@@ -18,19 +19,27 @@ class UsersController {
     try {
       const userCollection = dbClient.db.collection('users');
 
-      // Check if email already exists
-      const userExists = await userCollection.findOne({ email });
-      if (userExists) {
-        return res.status(400).json({ error: 'Already exists' });
+      // Check if the email already exists
+      const existingUser = await userCollection.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: 'Already exist' });
       }
 
-      // Hash the password with SHA1
+      // Create new user with hashed password
       const hashedPassword = sha1(password);
+      const newUser = {
+        email,
+        password: hashedPassword,
+      };
 
-      // Insert the new user into the database
-      const result = await userCollection.insertOne({ email, password: hashedPassword });
+      // Insert new user into the database
+      const result = await userCollection.insertOne(newUser);
 
-      return res.status(201).json({ id: result.insertedId, email });
+      // Return the new user (only email and id)
+      return res.status(201).json({
+        id: result.insertedId.toString(),
+        email: result.ops[0].email,
+      });
     } catch (err) {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
